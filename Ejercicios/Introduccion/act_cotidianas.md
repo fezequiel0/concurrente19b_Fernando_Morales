@@ -1,15 +1,13 @@
-Ejercicio 1 (act_cotidianas)
-
-    Serial, concurrente, cambio de contexto, y paralelo
+Respuestas:
 
     1. Cenar: comer, tertuliar, reír.
         R/ Concurrente cambio de contexto
-        
+
     2. Ver una película: observar la pantalla, escuchar los efectos de sonido, comer palomitas de maíz.
         R/ Concurrente paralelo
 
     3. Saciar una sed abundante: tomar agua, respirar, toser.
-        R/ Concurrente cambio de contexto
+        R/ Concurrente cambio de contexto (se empieza tomando agua, se respira, se tose y se continua tomando agua)
 
     4. Alistarse: bañarse, vestirse, lavarse los dientes.
         R/ Serial
@@ -25,13 +23,3 @@ Ejercicio 1 (act_cotidianas)
 
     8. Plantar muchas semillas: hacer el agujero en el suelo, depositar la semilla, rellenar el agujero.
         R/ Concurrente cambio de contexto
-
-Ejercicio 2 (fireman)
-
-Ejercicio 3 (act_comput)
-
-Ejercicio 4 (transmission_time_1)
-
-Ejercicio 5 (transmission_time_2)
-
-Ejercicio 6 (perf_eff_thrp)
