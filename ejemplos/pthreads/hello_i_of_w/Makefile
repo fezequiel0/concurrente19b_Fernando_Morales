@@ -1,4 +1,4 @@
-APPNAME = hello_i_of_w
+APPNAME = hello_i_of_w1
 
 $(APPNAME): $(APPNAME).c
 	cc -g -Wall -Wextra $(APPNAME).c -o $(APPNAME) -pthread
