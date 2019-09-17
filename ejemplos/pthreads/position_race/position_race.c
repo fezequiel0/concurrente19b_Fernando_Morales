@@ -7,6 +7,7 @@
 typedef struct{
 	size_t numberOfThreads;
 	size_t position;  
+	pthread_mutex_t position_mutex;
 } shared_data_t;
 
 typedef struct{
@@ -32,6 +33,7 @@ int main(int argc, char* argv[]){
 		shared_data-> numberOfThreads = sysconf(_SC_NPROCESSORS_ONLN);
 	}
 	
+	pthread_mutex_init(&shared_data->position_mutex, /*attr*/ NULL);
 	shared_data-> position = 0;
 	
 	struct timespec start_time;
@@ -49,6 +51,7 @@ int main(int argc, char* argv[]){
 	
 	printf("Hello execution time %.9lf s\n", elapsed_seconds);
 	
+	pthread_mutex_destroy(&shared_data->position_mutex);
 	free(shared_data);
 			
 	return 0;
@@ -73,12 +76,16 @@ int create_threads(shared_data_t* shared_data){
 		pthread_create(&thread_v[index], NULL, run, &private_data[index]);
 	}
 	
+	pthread_mutex_lock(&shared_data->position_mutex);
+	
 	printf("Hello world from main thread\n");
 	
+	pthread_mutex_unlock(&shared_data->position_mutex);
+ 	
 	for(size_t index=0; index<shared_data->numberOfThreads ;++index){
 		pthread_join(thread_v[index], NULL);
-	}
-	
+	}	
+		
 	free(private_data);
 	free(thread_v);
 	
@@ -92,10 +99,32 @@ void* run(void* data){
  	size_t threadCounter = private_data->threadCounter;
  	size_t numberOfThreads = shared_data->numberOfThreads; 
  	
-	printf("Thread %zu / %zu : I arrived at position %zu\n", threadCounter, numberOfThreads, ++shared_data->position);
-	
+ 	pthread_mutex_lock(&shared_data->position_mutex);
+ 	
+ 	++shared_data->position;
+	printf("Thread %zu / %zu : I arrived at position %zu\n", threadCounter, numberOfThreads, shared_data->position);
+ 	
+ 	pthread_mutex_unlock(&shared_data->position_mutex);
+ 	
 	return NULL;
 }
 
-// condicion de carrera: cuando dos procesos intentan modificar el mismo archivo al mismo tiempo
-// valgrind --tool=helgrind ./position_race
+/* 
+ Condicion de carrera: cuando dos procesos intentan modificar el mismo archivo al mismo tiempo
+ Deben ocurrir tres cosas:
+ 1. Codigo concurrente
+ 2. Memoria compartida
+ 3. Modificacion y escritura, nunca lectura;
+ Codigo que genera condiciones de carrera: region critica
+ valgrind --tool=helgrind ./position_race
+ La memoria en el heap puede ser compartida o privada, a la privada  solo vamos a poder accesarlas con punteros
+
+
+ Mecanismos de control de flujo -> while, if, for....
+ Mecanismos de control de concurrencia = mecanismos de sincronizacion  
+	Mutex(lock): mut-ual -ex-clusion -> cuello de botella, unicamente deja pasar a un proceso -> se interpreta como un valor booleano
+	Semaphore: 
+	Barrier:
+	Condition variable:
+	RW locks:
+*/
