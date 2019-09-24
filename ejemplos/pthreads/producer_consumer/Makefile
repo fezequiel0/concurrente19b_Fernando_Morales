@@ -9,11 +9,13 @@ LIBS=-pthread
 CLIBS=$(LIBS)
 CXXLIBS=$(LIBS)
 
-$(APPNAME): $(APPNAME).c
+all: $(APPNAME)
+
+%: %.c
 	$(CC) $(CFLAGS) $^ -o $@ $(CLIBS)
 
-#$(APPNAME): $(APPNAME).cpp
-#	$(CXX) $(CFLAGS) $^ -o $@ $(CLIBS)
+%: %.cpp
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(CXXLIBS)
 
 .PHONY: gitignore
 gitignore:
