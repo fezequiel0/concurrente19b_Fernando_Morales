@@ -94,11 +94,10 @@ void* run(void* data)
 	size_t thread_num = (*private_data).thread_num;
 	size_t thread_count = shared_data->thread_count;
 	
-	while(pthread_mutex_trylock(&shared_data->mutexes[thread_num]) != 0){
-    }
-
+	pthread_mutex_lock(&shared_data->mutexes[thread_num]);
+    
     printf("Hello world from secondary thread %zu of %zu\n", thread_num, thread_count);
-    if(thread_num!=thread_count){
+    if(thread_num!=--thread_count){
         pthread_mutex_unlock(&shared_data->mutexes[++thread_num]);
     }
 	return NULL;
