@@ -18,8 +18,8 @@ typedef struct {
     size_t thread_num; 
 } private_data_t;
 
-size_t** create_sudoku(shared_data_t*);
-void destroy_sudoku(size_t**, size_t);
+int create_sudoku(shared_data_t*);
+void destroy_sudoku(shared_data_t*);
 int create_threads(shared_data_t *);
 void* run(void*);
 void analyze_rows(private_data_t*);
@@ -34,19 +34,19 @@ int main(int argc, char* argv[]){
     if(argc>=2){
         sscanf(argv[1], "%zu", &shared_data->length);
         shared_data->thread_count = sysconf(_SC_NPROCESSORS_ONLN);
-        shared_data->sudoku = create_sudoku(shared_data);
-        if(shared_data->sudoku == NULL){
-            return free(shared_data),(void)fprintf(stderr,"ERROR: invalid sudoku\n"), 2;
+        int error = create_sudoku(shared_data);
+        if(error){
+            return destroy_sudoku(shared_data),free(shared_data),(void)fprintf(stderr,"ERROR: invalid sudoku\n"), 2;
         }
         pthread_barrier_init(&shared_data->bloques, NULL, shared_data->thread_count);
         pthread_barrier_init(&shared_data->filas, NULL, shared_data->thread_count);
         pthread_barrier_init(&shared_data->columnas, NULL, shared_data->thread_count);
         pthread_mutex_init(&shared_data->stdout_mutex, NULL);
-        int error = create_threads(shared_data);
+        error = create_threads(shared_data);
         if(error){
             return (void)fprintf(stderr, "ERROR: couldnt create threads\n"), 3;
         }
-        destroy_sudoku(shared_data->sudoku, shared_data->length);
+        destroy_sudoku(shared_data);
         pthread_barrier_destroy(&shared_data->bloques);
         pthread_barrier_destroy(&shared_data->filas);
         pthread_barrier_destroy(&shared_data->columnas);
@@ -59,36 +59,35 @@ int main(int argc, char* argv[]){
     return 0;
 }
 
-size_t** create_sudoku(shared_data_t* shared_data){
-    size_t** sudoku =calloc(shared_data->length * shared_data->length, sizeof(size_t*));
+int create_sudoku(shared_data_t* shared_data){
+    shared_data->sudoku =calloc(shared_data->length * shared_data->length, sizeof(size_t*));
     for(size_t index = 0; index < (shared_data->length*shared_data->length); ++index){
-        sudoku[index] = calloc(shared_data->length*shared_data->length,sizeof(size_t));
+        shared_data->sudoku[index] = calloc(shared_data->length*shared_data->length,sizeof(size_t));
     }        
     int error = 0;
     for(size_t temp_filas = 0; temp_filas < (shared_data->length*shared_data->length); ++temp_filas){
         for(size_t temp_columnas = 0; temp_columnas < (shared_data->length*shared_data->length); ++temp_columnas){
-            if(!scanf("%zu ", &sudoku[temp_filas][temp_columnas])){
+            if(!scanf("%zu ", &shared_data->sudoku[temp_filas][temp_columnas])){
                 ++error;
                 fprintf(stderr, "e%zu%zu\n", temp_filas, temp_columnas);
-                sudoku[temp_filas][temp_columnas] = 0;
+                shared_data->sudoku[temp_filas][temp_columnas] = 0;
             }
         }
 
     }
-
     if(!error){
-        return sudoku;
+        return 0;
     }
     else{
-        return destroy_sudoku(sudoku, shared_data->length), NULL;
+        return 1;
     }
 }
 
-void destroy_sudoku(size_t** sudoku, size_t length){
-    for(size_t index = 0; index< (length*length); ++index){
-        free(sudoku[index]);
+void destroy_sudoku(shared_data_t * shared_data){
+    for(size_t index = 0; index< (shared_data->length*shared_data->length); ++index){
+        free(shared_data->sudoku[index]);
     }
-    free(sudoku);
+    free(shared_data->sudoku);
 }
 
 int create_threads(shared_data_t * shared_data){
