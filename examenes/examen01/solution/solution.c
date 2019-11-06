@@ -25,8 +25,6 @@ void* run(void*);
 void analyze_rows(private_data_t*);
 void analyze_columns(private_data_t*);
 void analyze_blocks(private_data_t*);
-size_t row_to_start(size_t, private_data_t*);
-size_t column_to_start(size_t, private_data_t*);
 
 int main(int argc, char* argv[]){
     shared_data_t* shared_data = calloc(1, sizeof(shared_data_t));
@@ -38,7 +36,7 @@ int main(int argc, char* argv[]){
         shared_data->thread_count = sysconf(_SC_NPROCESSORS_ONLN);
         shared_data->sudoku = create_sudoku(shared_data);
         if(shared_data->sudoku == NULL){
-            return free(shared_data),(void)fprintf(stderr,"ERROR: invalid sudoku"), 2;
+            return free(shared_data),(void)fprintf(stderr,"ERROR: invalid sudoku\n"), 2;
         }
         pthread_barrier_init(&shared_data->bloques, NULL, shared_data->thread_count);
         pthread_barrier_init(&shared_data->filas, NULL, shared_data->thread_count);
@@ -46,7 +44,7 @@ int main(int argc, char* argv[]){
         pthread_mutex_init(&shared_data->stdout_mutex, NULL);
         int error = create_threads(shared_data);
         if(error){
-            return (void)fprintf(stderr, "ERROR: couldnt create threads"), 3;
+            return (void)fprintf(stderr, "ERROR: couldnt create threads\n"), 3;
         }
         destroy_sudoku(shared_data->sudoku, shared_data->length);
         pthread_barrier_destroy(&shared_data->bloques);
@@ -55,37 +53,29 @@ int main(int argc, char* argv[]){
         pthread_mutex_destroy(&shared_data->stdout_mutex);
     }
     else{
-        printf("usage: length sudoku");
+        printf("usage: length sudoku\n");
     }
     free(shared_data);
     return 0;
 }
 
 size_t** create_sudoku(shared_data_t* shared_data){
-    size_t** sudoku =calloc(shared_data->length*shared_data->length, sizeof(size_t*));
-    if(shared_data->sudoku){
-        for(size_t index = 0; index < (shared_data->length*shared_data->length); ++index){
-            sudoku[index] = calloc(shared_data->length*shared_data->length,sizeof(size_t));
-        }        
-    }
-    else{
-        return destroy_sudoku(sudoku, shared_data->length),NULL;
-    }
+    size_t** sudoku =calloc(shared_data->length * shared_data->length, sizeof(size_t*));
+    for(size_t index = 0; index < (shared_data->length*shared_data->length); ++index){
+        sudoku[index] = calloc(shared_data->length*shared_data->length,sizeof(size_t));
+    }        
     int error = 0;
     for(size_t temp_filas = 0; temp_filas < (shared_data->length*shared_data->length); ++temp_filas){
         for(size_t temp_columnas = 0; temp_columnas < (shared_data->length*shared_data->length); ++temp_columnas){
-            size_t number = scanf("%zu", &number);
-            if(number){
-                sudoku[temp_filas][temp_columnas] = number;
-            }
-            else{
+            if(!scanf("%zu ", &sudoku[temp_filas][temp_columnas])){
                 ++error;
-                fprintf(stderr, "e%zu%zu", temp_filas, temp_columnas);
+                fprintf(stderr, "e%zu%zu\n", temp_filas, temp_columnas);
                 sudoku[temp_filas][temp_columnas] = 0;
             }
         }
-        getchar();
+
     }
+
     if(!error){
         return sudoku;
     }
@@ -106,22 +96,20 @@ int create_threads(shared_data_t * shared_data){
     if(private_data == NULL){
         return 4;
     }
-    for(size_t index = 0; index<shared_data->thread_count; ++index){
-        private_data[index].shared_data = shared_data;
-        private_data[index].thread_num = index;
-    }
     pthread_t * threads = (pthread_t*)calloc(shared_data->thread_count,sizeof(pthread_t));
     if(threads == NULL){
         return free(private_data), 5;
     }
     for(size_t index = 0; index< shared_data->thread_count; ++index){
+        private_data[index].shared_data = shared_data;
+        private_data[index].thread_num = index;
         pthread_create(&threads[index], NULL, run, &private_data[index]);
     }
     for(size_t index = 0; ++index< shared_data->thread_count; ++index){
         pthread_join(threads[index], NULL);
     }
-    free(threads);
     free(private_data);
+    free(threads);
     return 0;
 }
 
@@ -140,7 +128,7 @@ void* run(void* data){
 void analyze_rows(private_data_t * private_data){
     shared_data_t * shared_data = private_data->shared_data;
     size_t length = shared_data->length;
-    for(size_t row = private_data->thread_num; row<(length*length); row+=private_data->thread_num){
+    for(size_t row = private_data->thread_num; row<(length*length); row+=shared_data->thread_count){
         for(size_t column = 0; column < (length*length); ++column){
             size_t num = shared_data->sudoku[row][column];
             if(num!=0){
@@ -148,7 +136,7 @@ void analyze_rows(private_data_t * private_data){
                     size_t num_to_compare = shared_data->sudoku[row][column_to_compare];
                     if(num == num_to_compare){
                         pthread_mutex_lock(&shared_data->stdout_mutex);
-                        printf("r%zu,%zu", row, column_to_compare);
+                        printf("r%zu,%zu\n", row, column_to_compare);
                         pthread_mutex_unlock(&shared_data->stdout_mutex);
                     }
                 }
@@ -159,7 +147,7 @@ void analyze_rows(private_data_t * private_data){
 void analyze_columns(private_data_t * private_data){
     shared_data_t * shared_data = private_data->shared_data;
     size_t length = shared_data->length;
-    for(size_t column = private_data->thread_num; column<(length*length); column+=private_data->thread_num){
+    for(size_t column = private_data->thread_num; column<(length*length); column+=shared_data->thread_count){
         for(size_t row = 0; row < (length*length); ++row){
             size_t num = shared_data->sudoku[row][column];
             if(num!=0){
@@ -167,7 +155,7 @@ void analyze_columns(private_data_t * private_data){
                     size_t num_to_compare = shared_data->sudoku[row_to_compare][column];
                     if(num == num_to_compare){
                         pthread_mutex_lock(&shared_data->stdout_mutex);
-                        printf("c%zu,%zu", row_to_compare, column);
+                        printf("c%zu,%zu\n", row_to_compare, column);
                         pthread_mutex_unlock(&shared_data->stdout_mutex);
                     }
                 }
@@ -179,22 +167,22 @@ void analyze_columns(private_data_t * private_data){
 void analyze_blocks(private_data_t * private_data){
     shared_data_t * shared_data = private_data->shared_data;
     size_t length = shared_data->length;
-    for(size_t block = private_data->thread_num; block<(length*length); block+=private_data->thread_num){
-        size_t row = row_to_start(block,private_data);
-        size_t column = column_to_start(block, private_data);
+    size_t numbers[length*length];        
+    for(size_t block = private_data->thread_num; block < (length*length); block+=shared_data->thread_count){
+        size_t row = block - (block % shared_data->length);
+        size_t column = (block % shared_data->length) * shared_data->length;
         size_t end_row = row + length;
         size_t end_column = column + length;
-        size_t numbers[length*length];
         size_t index_to_insert = 0;
-        for(size_t row_to_analyze = row ;row_to_analyze < end_row; ++row){
-            for(size_t column_to_analyze = column; column_to_analyze < end_column; ++column){
+        for(size_t row_to_analyze = row ;row_to_analyze < end_row; ++row_to_analyze){
+            for(size_t column_to_analyze = column; column_to_analyze < end_column; ++column_to_analyze){
                 size_t num = shared_data->sudoku[row_to_analyze][column_to_analyze];
                 int found_copy = 0;
                 for(size_t index = 0; index < index_to_insert ; ++index){
                     if(num != 0){
                         if(num == numbers[index]){
                             pthread_mutex_lock(&shared_data->stdout_mutex);
-                            printf("b%zu,%zu", row_to_analyze, column_to_analyze);
+                            printf("b%zu,%zu \n", row_to_analyze, column_to_analyze);
                             pthread_mutex_unlock(&shared_data->stdout_mutex);
                             found_copy = 1;
                         }
@@ -205,20 +193,7 @@ void analyze_blocks(private_data_t * private_data){
                     ++index_to_insert;
                 } 
             }            
-        }    
-    }
-}
+        }
 
-size_t row_to_start(size_t block, private_data_t * private_data){
-    shared_data_t * shared_data = private_data->shared_data;
-    size_t result = 0;
-    result = block - (block % shared_data->length);
-    return result;
-}
-
-size_t column_to_start(size_t block, private_data_t * private_data){
-    shared_data_t * shared_data = private_data->shared_data;
-    size_t result = 0;
-    result = (block % shared_data->length) * shared_data->length;
-    return result;
+    }      
 }
