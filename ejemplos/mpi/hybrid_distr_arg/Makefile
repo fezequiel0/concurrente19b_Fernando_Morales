@@ -20,6 +20,11 @@ $(EXECUTABLE): $(OBJECTS)
 %.o: %.c $(HEADERS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+
+.PHONY: gitignore
+gitignore:
+	echo $(EXECUTABLE) > .gitignore
+
 .PHONY: clean
 clean:
 	rm -rf $(EXECUTABLE) *.o *.dSYM *~
