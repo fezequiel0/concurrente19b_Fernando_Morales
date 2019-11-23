@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <semaphore.h>
-
+#define MAX_SIZE 1000 
 typedef struct {
     size_t rest_count;
     size_t* rest_capacity;
@@ -45,70 +45,32 @@ int main(){
         pthread_mutex_init(&shared_data->capacity_mutex[index], NULL);
         sem_init(&shared_data->rest_semaphore[index], 0, shared_data->rest_capacity[index]);
     }
-    private_data_t * private_data = calloc(1, sizeof(private_data_t));
-    pthread_t * threads = calloc(1, sizeof(pthread_t));
+    private_data_t * private_data = calloc(MAX_SIZE, sizeof(private_data_t));
+    pthread_t * threads = calloc(MAX_SIZE, sizeof(pthread_t));
 //  local id := 0
-    size_t id = 0;
-    size_t stop = 0;
 //  while true do
-    while(!stop){//cambiar a sscanf metiendolo en un char y seguir mientras sea válido
-//      case read_char() of 
+    size_t id; 
+    for(id = 0; id < MAX_SIZE; ++id ){//cambiar a sscanf metiendolo en un char y seguir mientras sea válido
+//      case read_char() of
         char choice = getchar();
    //      P : create_thread(patient(id))
         if(choice == 'P'){
-            printf("LLEGA ACA CON %c", choice);
-
             private_data[id].id = id;
-
-            printf("LLEGA ACA CON %c", choice);
-
             private_data[id].shared_data = shared_data;
-            printf("LLEGA ACA CON %c", choice);
             pthread_create(&threads[id], NULL, patient, &private_data[id]);
-            printf("LLEGA ACA CON %c", choice);
-            ++id;
-            private_data_t * new_private_data = realloc(private_data, (id+1)*sizeof(private_data_t));
-            if(!new_private_data){
-                --id;
-                fprintf(stderr, "ERROR: couldnt allocate private data for %zu threads", id);
-                choice = 'E';
-            }
-            private_data = new_private_data;
-            pthread_t * new_threads = realloc(threads, (id+1)*sizeof(pthread_t));
-            if(!new_threads){
-                --id;
-                fprintf(stderr, "ERROR: couldnt allocate private data for %zu threads", id);
-                choice = 'E';
-            }
-            threads = new_threads;
         }
 //      I : create_thread(impatient(id))
         if(choice == 'I'){
             private_data[id].id = id;
             private_data[id].shared_data = shared_data;
             pthread_create(&threads[id], NULL, impatient, &private_data[id]);
-            ++id;
-            private_data_t * new_private_data = realloc(private_data, (id+1)*sizeof(private_data_t));
-            if(!new_private_data){
-                --id;
-                fprintf(stderr, "ERROR: couldnt allocate private data for %zu threads", id);
-                choice = 'E';
-            }
-            private_data = new_private_data;
-            pthread_t * new_threads = realloc(threads, (id+1)*sizeof(pthread_t));
-            if(!new_threads){
-                --id;
-                fprintf(stderr, "ERROR: couldnt allocate private data for %zu threads", id);
-                choice = 'E';
-            }
-            threads = new_threads;
         }
 //      EOF: return
         if(choice != 'P' && choice != 'I'){
-            ++stop;
+            id = MAX_SIZE;
         }
     }
-    for(size_t index = 0; index< id; ++index){
+    for(size_t index = 0; index<id; ++index){
         pthread_join(threads[index], NULL);
     }
     free(threads);
@@ -164,7 +126,6 @@ void * impatient(void * data){
     while(tries < shared_data->rest_count && didnt_eat){
 //      wait(capacity_mutex[id])
         pthread_mutex_lock(&shared_data->capacity_mutex[private_data->id]);
-        printf("LLEGA ACA CON %zu", private_data->id);
 //      rest_differences[id] := rest_current_capacity[id] - rest_capacity[id]
         rest_differences[private_data->id] = (long long int)shared_data->rest_current_capacity[private_data->id] - (long long int)shared_data->rest_capacity[private_data->id];
 //      signal(capacity_mutex[id])
