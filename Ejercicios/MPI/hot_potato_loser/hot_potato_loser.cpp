@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
             MPI_Send(&hot_potato, /*count*/ 1, MPI_INT, /*dest*/ my_rank + 1, /*tag*/ 0, MPI_COMM_WORLD);
         }
         else{
-            std::cout << "The process with rank "<< my_rank << " lost." <<:: std:endl;
+            std::cout << "The process with rank "<< my_rank << " lost." << std::endl;
             for ( int destination = 1; destination < process_count; ++destination ){
                 MPI_Send(&hot_potato, 1, MPI_INT, destination, /*tag*/ 0, MPI_COMM_WORLD);
             }
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
         MPI_Recv(&hot_potato, /*capacity*/ 1, MPI_INT, /*source*/ MPI_ANY_SOURCE, /*tag*/ 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         --hot_potato;
         if(hot_potato == 0 ){
-            std::cout << "The process with rank "<< my_rank << " lost." <<:: std:endl;
+            std::cout << "The process with rank "<< my_rank << " lost." <<std::endl;
             for ( int destination = 0; destination < process_count; ++destination ){
                 if(destination != my_rank){
 				    MPI_Send(&hot_potato, 1, MPI_INT, destination, /*tag*/ 0, MPI_COMM_WORLD);
