@@ -70,14 +70,20 @@ int main(int argc, char* argv[])
                 if(number_processes_out == process_count - 1){
                     std::cout << "The process with rank "<< my_rank << " won."<< std::endl;
                     hot_potato = -1;    
-                    if ( my_rank < process_count - 1 ){
-                        MPI_Send(&number_processes_out, /*count*/ 1, MPI_INT, /*dest*/ my_rank + 1, /*tag*/ 0, MPI_COMM_WORLD);
-                        MPI_Send(&hot_potato, /*count*/ 1, MPI_INT, /*dest*/ my_rank + 1, /*tag*/ 0, MPI_COMM_WORLD);
-                    }
-                    else{
-                        MPI_Send(&number_processes_out, /*count*/ 1, MPI_INT, /*dest*/ 0, /*tag*/ 0, MPI_COMM_WORLD);
-                        MPI_Send(&hot_potato, /*count*/ 1, MPI_INT, /*dest*/ 0, /*tag*/ 0, MPI_COMM_WORLD);
-                    }
+                    for ( int destination = 0; destination < process_count; ++destination ){
+                        if(destination != my_rank){
+				            MPI_Send(&number_processes_out, 1, MPI_INT, destination, /*tag*/ 0, MPI_COMM_WORLD);
+				            MPI_Send(&hot_potato, 1, MPI_INT, destination, /*tag*/ 0, MPI_COMM_WORLD);
+                        }
+	        		}
+                    // if ( my_rank < process_count - 1 ){
+                    //     MPI_Send(&number_processes_out, /*count*/ 1, MPI_INT, /*dest*/ my_rank + 1, /*tag*/ 0, MPI_COMM_WORLD);
+                    //     MPI_Send(&hot_potato, /*count*/ 1, MPI_INT, /*dest*/ my_rank + 1, /*tag*/ 0, MPI_COMM_WORLD);
+                    // }
+                    // else{
+                    //     MPI_Send(&number_processes_out, /*count*/ 1, MPI_INT, /*dest*/ 0, /*tag*/ 0, MPI_COMM_WORLD);
+                    //     MPI_Send(&hot_potato, /*count*/ 1, MPI_INT, /*dest*/ 0, /*tag*/ 0, MPI_COMM_WORLD);
+                    // }
                 }
                 else{
                     if ( my_rank < process_count - 1 ){
