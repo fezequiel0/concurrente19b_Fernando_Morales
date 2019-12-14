@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
 
 	int prime_count = 0;
 	int private_count = 0;
-	int global_prime = 0;
+	int global_primes = 0;
 	int global_threads = 0;
 	#pragma omp parallel for num_threads(thread_count) default(none) shared(prime_count) reduction(+:private_count)
 		for(int iteration = my_start;iteration<my_finish;++iteration){
@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
 //		std::cout << '\t' << hostname << ":" << my_rank << ":" << omp_get_thread_num() << ": range ["
 //			<< my_thread_start << "," << my_thread_finish << "[ size " << my_thread_width << std::endl;
 
-	MPI_Reduce(&prime_count, &global_prime, /*count*/ 1, MPI_INT, MPI_SUM, /*root*/ 0, MPI_COMM_WORLD);
+	MPI_Reduce(&prime_count, &global_primes, /*count*/ 1, MPI_INT, MPI_SUM, /*root*/ 0, MPI_COMM_WORLD);
 	MPI_Reduce(&thread_count, &global_threads, /*count*/ 1, MPI_INT, MPI_SUM, /*root*/ 0, MPI_COMM_WORLD);
 	double elapsed = MPI_Wtime() - start_time;
 	double global_elapsed = 0;
