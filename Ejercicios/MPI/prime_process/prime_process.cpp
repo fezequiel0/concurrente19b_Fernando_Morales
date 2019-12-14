@@ -85,7 +85,6 @@ int main(int argc, char* argv[])
 	int prime_count = 0;
 	int private_count = 0;
 	int global_primes = 0;
-	int global_threads = 0;
     for(int iteration = my_start;iteration<my_finish;++iteration){
         if(is_prime(iteration)){
             ++private_count;
@@ -111,7 +110,6 @@ int main(int argc, char* argv[])
 //			<< my_thread_start << "," << my_thread_finish << "[ size " << my_thread_width << std::endl;
 
 	MPI_Reduce(&prime_count, &global_primes, /*count*/ 1, MPI_INT, MPI_SUM, /*root*/ 0, MPI_COMM_WORLD);
-	MPI_Reduce(&thread_count, &global_threads, /*count*/ 1, MPI_INT, MPI_SUM, /*root*/ 0, MPI_COMM_WORLD);
 	double elapsed = MPI_Wtime() - start_time;
 	double global_elapsed = 0;
 
@@ -120,7 +118,7 @@ int main(int argc, char* argv[])
 	MPI_Reduce(&my_rank, &global_processes, /*count*/ 1, MPI_INT, MPI_MAX, /*root*/ 0, MPI_COMM_WORLD);
 
 	if(my_rank == 0){
-		fprintf(stdout, "%d primes found in range [%d, %d[ in %.9lfs with %d processes\n", global_primes, global_start, global_finish, global_elapsed,global_processes+1,);
+		fprintf(stdout, "%d primes found in range [%d, %d[ in %.9lfs with %d processes\n", global_primes, global_start, global_finish, global_elapsed,global_processes+1);
 	}
 	MPI_Finalize();
 }
