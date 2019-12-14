@@ -3,99 +3,96 @@
 #include <iostream>
 #include <mpi.h>
 #include <omp.h>
-#include <bits/stdc++.h>
+#include <iomanip>
+#include <math.h>
 
-#define MAX_HOSTNAME_LENGTH 1024
-
-bool ive_won(bool processes_active[], int length) {
-	bool result = false;
-	int counter = 0;
-	for (int i = 0; i < length; ++i) {
-		if(processes_active[i] == true){
-			++counter;
-		}
-	}
-	if(counter){
-		result = true;	
-	}
-	return result;
-}
-
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]){
 	MPI_Init(&argc, &argv);
-
-	int my_rank = -1; 
-	int total_processes = -1;
-
+	
+	int my_rank = -1;
+	int processes_count = -1;
+	
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &total_processes);
-
-	char hostname[MAX_HOSTNAME_LENGTH];
+	MPI_Comm_size(MPI_COMM_WORLD, &processes_count);
+	
+	char hostname[MPI_MAX_PROCESSOR_NAME];
 	int hostname_length = -1;
 	MPI_Get_processor_name(hostname, &hostname_length);
-
+	
 	int hot_potato = 0;
-	int start_player = 0;
-	if(!sscanf(argv[1],"%d", &hot_potato) || !sscanf(argv[2], "%d", &start_player)){
-		if(my_rank == 0) {
-			MPI_Finalize();
-			return printf("Error in arguments.\nUse ./hot_potato_loser potato_value start_player\n"), 1;
-		}
+	int original_hot_potato = 0;
+	int processes_out=0;
+	int initial_process=0;
+	if ( argc >= 3 ){
+		hot_potato= atoi(argv[1]);
+		initial_process=atoi(argv[2]);
 	}
-
-	if(start_player >= total_processes) {
+	else{
+		if(my_rank==0){
+			std::cin >> hot_potato;
+			std::cin >> initial_process;
+		}
+		MPI_Bcast(&hot_potato, 1, MPI_INT,0, MPI_COMM_WORLD);
+		MPI_Bcast(&initial_process, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	}
+	if(initial_process >= processes_count) {
 		MPI_Finalize();
 		return printf("You can't start in a non player.\n"), 2;
 	}
-
-	if(total_processes < 2) {
+	if(processes_count < 2) {
 		MPI_Finalize();
 		return printf("You can't play alone.\n"), 3;
 	}
 
-	int current = 0;
-	bool processes_still_playing[total_processes];
-	for (int i = 0; i < total_processes; ++i) {
-		processes_still_playing[i] = true;
-	} 
+	int turn=initial_process;
+	int im_out=0;
+	original_hot_potato=hot_potato;
+	int root=turn;
 	
-	while(processes_still_playing[my_rank]) {
-		if(current != 0 || my_rank != start_player) {
-			int prev = my_rank;
-			while (!processes_still_playing[prev]){
-				--prev;
-				if (prev < 0){
-					prev = total_processes - 1;
+	while(processes_out<processes_count){
+		root=turn;
+		if(my_rank==turn){
+			if(!im_out){	
+				if(hot_potato%2==0){
+					hot_potato=hot_potato/2;
 				}
-			} 
-			MPI_Recv(&potato, 1, MPI_INT, prev, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			MPI_Recv(&processes_still_playing, total_processes, MPI_C_BOOL, prev, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		}
-		if(ive_won(processes_still_playing, total_processes)) {
-			printf("Process %d is the winner.\n", my_rank);
-			MPI_Finalize();
-		} 
-		else {
-			++current;
-			if(hot_potato % 2 == 1){ 
-				hot_potato = 3 * hot_potato + 1;
+				else{
+					hot_potato=3*hot_potato+1;
+				}
+				if(hot_potato==1){
+					printf("Process %d lost.\n", my_rank);
+					im_out=1;
+					hot_potato=original_hot_potato;
+					processes_out++;		
+				}
+				else{
+					if(hot_potato<1){
+						im_out=1;
+					}
+				}
 			}
-			else{ 
-				hot_potato /= 2;
-			}
-			if(hot_potato == 1) {
-				processes_still_playing[my_rank] = false;
-				printf("Process %d lose.\n", my_rank);
-				sscanf(argv[1], "%d", &hot_potato);
-			}
-			int next = my_rank;
-			while(processes_still_playing[next] == false){
-				next = (next + 1) % total_processes;
-			} 
-			MPI_Send(&hot_potato, 1, MPI_INT, next, 0, MPI_COMM_WORLD);
-			MPI_Send(&processes_still_playing, total_processes, MPI_C_BOOL, next, 0, MPI_COMM_WORLD);
-		}
-	}
 
-	return 0;
+			if(processes_out==processes_count-1 && !im_out){
+				printf("Process %d is the winner.\n", my_rank);
+				im_out=1;
+				hot_potato=0;
+				processes_out+=2;
+			}
+
+			if(turn==processes_count-1){
+				turn=0;
+			}
+			else{
+				turn++;
+			}
+		}
+		if(processes_out==processes_count && im_out){
+			--processes_out;
+		}
+		MPI_Bcast(&hot_potato, 1, MPI_INT,root, MPI_COMM_WORLD);
+		MPI_Bcast(&processes_out, 1, MPI_INT,root, MPI_COMM_WORLD);
+		MPI_Bcast(&turn, 1, MPI_INT,root, MPI_COMM_WORLD);
+	}
+				
+	MPI_Finalize();
 }

@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
 			}
 			if(hot_potato == 1) {
 				processes_still_playing[my_rank] = false;
-				printf("Process %d lose.\n", my_rank);
+				printf("Process %d lost.\n", my_rank);
 				sscanf(argv[1], "%d", &hot_potato);
 			}
 			int next = my_rank;
