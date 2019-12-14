@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
         }
         else{
             --hot_potato;
-            if(hot_potato == 0 ){
+            if(hot_potato == 0 && !im_out){
                 ++number_processes_out;
                 im_out = 1;
                 if ( my_rank < process_count - 1 ){
