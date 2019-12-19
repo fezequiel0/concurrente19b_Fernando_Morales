@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
 				sscanf(argv[1], "%d", &hot_potato);
 			}
 		}
-		if(players >= 0) {
+		if(processes_still_playing >= 0) {
 			int next = (my_rank + 1) % total_processes;
 			MPI_Send(&hot_potato, 1, MPI_INT, next, 0, MPI_COMM_WORLD);
 			MPI_Send(&processes_still_playing, 1, MPI_INT, next, 0, MPI_COMM_WORLD);

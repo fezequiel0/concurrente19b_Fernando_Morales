@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
 					prev = total_processes - 1;
 				}
 			} 
-			MPI_Recv(&potato, 1, MPI_INT, prev, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Recv(&hot_potato, 1, MPI_INT, prev, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			MPI_Recv(&processes_still_playing, total_processes, MPI_C_BOOL, prev, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 		}
 		if(ive_won(processes_still_playing, total_processes)) {
